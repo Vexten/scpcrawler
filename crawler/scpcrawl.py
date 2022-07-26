@@ -1,5 +1,6 @@
 from ssl import SSLError
-import pagestruct as scp, requests
+import scpentry as scp
+import requests
 from bs4 import BeautifulSoup as bsoup, NavigableString, Tag
 from threading import Thread, Lock
 
@@ -71,6 +72,7 @@ def is_entry(soup : bsoup) -> bool:
 def grab(url : str) -> tuple[str,set]:
     retries = 0
     resp = None
+    links = set()
     while retries < 3:
         try:
             resp = requests.get(url)
@@ -81,7 +83,6 @@ def grab(url : str) -> tuple[str,set]:
     if retries > 2:
         return url.replace(SCP_WIKI + '/','').capitalize() + ': ' + ENTRY_CONNECTION_ERROR, links
     soup = bsoup(resp.text, 'html.parser')
-    links = set()
     if is_entry(soup):
         title = soup.title.string.replace(TITLE_WIKI,'')
         content = get_content(soup)
