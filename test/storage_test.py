@@ -1,50 +1,65 @@
-from ..crawler import storage as s
+# IMPORT SETUP
+import sys
+sys.path.append('../')
+# IMPORT SETUP
+
+from crawler.storage import SafeWrapper
 import unittest
+
+ACC_FAIL = 'Access failure on'
 
 class WrapperFunctionalityTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.a = dict()
-        self.b = list()
-        self.c = set()
-        self.a_w = s.SafeWrapper(dict())
-        self.b_w = s.SafeWrapper(list())
-        self.c_w = s.SafeWrapper(set())
+        self.default = [dict(), list(), set()]
+        self.wrapped = [SafeWrapper(dict()), SafeWrapper(list()), SafeWrapper(set())]
     
     def tearDown(self) -> None:
-        self.a = None
-        self.b = None
-        self.c = None
-        self.a_w = None
-        self.b_w = None
-        self.c_w = None
+        self.default = None
+        self.wrapped = None
+
+    def fill_values(self):
+        self.default[0]['test'] = 'success'
+        self.default[1].append('test')
+        self.default[2].add('test')
+        self.wrapped[0]['test'] = 'success'
+        self.wrapped[1].append('test')
+        self.wrapped[2].add('test')
 
     def test_add(self):
-        self.a['test'] = 'success'
-        self.a_w['test'] = 'success'
-        self.assertEqual(self.a, self.a_w)
-        self.assertEqual(self.a.items(), self.a_w.items())
-        self.assertEqual(self.a.keys(), self.a_w.keys())
-        self.b.append('test')
-        self.b_w.append('test')
-        self.assertEqual(self.b, self.b_w)
-        self.assertEqual(self.b[0], self.b_w[0])
-        self.c.add('test')
-        self.c_w.add('test')
-        self.assertEqual(self.c, self.c_w)
-        self.assertEqual(self.c.pop(), self.c_w.pop())
+        self.fill_values()
+        for i in range(3):
+            self.assertEqual(self.default[i], self.wrapped[i])
+
+    def test_access(self):
+        self.fill_values()
+        try:
+            a = self.wrapped[0]['test']
+        except Exception as e:
+            self.fail(ACC_FAIL + f' dict: {str(e)}')
+        try:
+            a = self.wrapped[1][0]
+        except Exception as e:
+            self.fail(ACC_FAIL + f' list: {str(e)}')
+        try:
+            a = self.wrapped[2].pop()
+        except Exception as e:
+            self.fail(ACC_FAIL + f' set: {str(e)}')
 
     def test_iterator(self):
-        for i in range(20):
-            self.a[str(i)] = i
-            self.a_w[str(i)] = i
-            self.b.append(i)
-            self.b_w.append(i)
-            self.c.add(i)
-            self.c_w.add(i)
-        la = [i for i in self.a]
-        la_w = [i for i in self.a_w]
-        lb = [i for i in self.b]
-        lb_w = [i for i in self.b_w]
-        lc = [i for i in self.c]
-        lc_w = [i for i in self.c_w]
+        for i in range(10,30):
+            self.default[0][str(i)] = i
+            self.default[1].append(i)
+            self.default[2].add(i)
+            self.wrapped[0][str(i)] = i
+            self.wrapped[1].append(i)
+            self.wrapped[2].add(i)
+        for j in range(3):
+            a = [i for i in self.default[j]]
+            b = []
+            try:
+                for i in self.wrapped[j]:
+                    b.append(i)
+            except Exception as e:
+                self.fail(f'Iterator fail on {j}, {i}: {str(e)}')
+            self.assertEqual(a,b)
